@@ -82,6 +82,4 @@ sklearn
 nibabel
 
 ##C++
-
-
-
+64bit Unix
