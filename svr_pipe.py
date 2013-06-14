@@ -1,3 +1,7 @@
+## braindev-ml
+## Author: Henrik Ullman
+## License: GPL Version 3
+
 import numpy as np
 import nibabel as nb
 import joblib as jl
