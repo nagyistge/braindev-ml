@@ -1,0 +1,2 @@
+compiled with
+g++ `pkg-config opencv --cflags --libs` -std=gnu++0x -o test generating_2D_segmentation_data.cpp
