@@ -45,6 +45,20 @@ def make_4d_matrix(files):
 
     return out_matrix
 
+def filter_4d_matrix(matrix, maskfile):
+    """filter out mask and nan from 4d matrix"""
+    import nibabel as nb
+    import numpy as np
+    mask_handle = nb.load(maskfile)
+    maskdata = mask_handle.get_data()
+    matrix[maskdata==0,:] = np.nan
+    #sum_matrix = np.sum(matrix,0)
+    #bool_matrix = np.isnan(sum_matrix)
+    #matrix[bool_matrix,:] = 0
+    matrix = matrix.T
+
+    return matrix
+
 
 def information_map(input_4d, method='mi'):
     """calculate similarity of signal for each voxel compared to surrounding voxels
