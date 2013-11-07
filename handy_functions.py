@@ -68,7 +68,22 @@ def information_map(input_4d, method='mi'):
     import numpy as np
     import sklearn.metrics as skl_met
     import scipy.stats as ss
+    import scipy.ndimage as si
+
+    #Applying filtering prior to calculation
+    #filter_ind = 0
+    #temp_4d = np.zeros_like(input_4d.T)
+    #for i in input_4d.T:
+        #temp_4d[filter_ind] = si.median_filter(i,size=4)
+    #    temp_4d[filter_ind] = si.gaussian_filter(i,0.5)
+    #    filter_ind += 1
+
+    #input_4d = temp_4d.T
+
+    #scale data first?
+
     metric_map = np.zeros_like(input_4d[:, :, :, 0])
+    metric_map = metric_map.astype(float)
     for fir in range(len(input_4d)):
         for sec in range(len(input_4d[0])):
             for thr in range(len(input_4d[(0, 0)])):
@@ -89,11 +104,12 @@ def information_map(input_4d, method='mi'):
                     if len(i) != 0:
                         use_neigh += 1
 
+
                 pruned_neigh_dist = np.zeros((use_neigh, len(input_4d[(0, 0, 0)])))
                 add_neigh = 0
                 for i in neigh_dist:
                     if i != []:
-                        pruned_neigh_dist[0] = i
+                        pruned_neigh_dist[add_neigh] = i
                         add_neigh += 1
 
                 mean_neigh_dist = np.mean(pruned_neigh_dist, 0)
@@ -106,6 +122,7 @@ def information_map(input_4d, method='mi'):
                     dist_metric = skl_met.normalized_mutual_info_score(discrete_center, discrete_surround)
                 elif method == 'pearson':
                     dist_metric, _ = ss.pearsonr(mean_neigh_dist, center_dist)
+
                 elif method == 'spearman':
                     dist_metric, _ = ss.spearmanr(mean_neigh_dist, center_dist)
                 metric_map[fir, sec, thr] = dist_metric
