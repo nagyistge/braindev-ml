@@ -1,2 +1,13 @@
+1)generating data
 compiled with
 g++ `pkg-config opencv --cflags --libs` -std=gnu++0x -o test generating_2D_segmentation_data.cpp
+
+
+2)segmenting data
+requires
+Eigen (http://eigen.tuxfamily.org/)
+CImg.h (included already) (cimg.sourceforge.net)
+
+compiled with
+g++ MarkovRandomFieldSegmentation.cpp -L/usr/X11R6/lib -lm -lpthread -lX11 -o mrf -std=gnu++11
+

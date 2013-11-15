@@ -45,7 +45,7 @@ int main( int argc, char** argv )
 		return -1;
 	}
 	srand (time(NULL));
-	int imsize=255;
+	int imsize=40;
 	/*Mat segments(imsize,imsize, CV_8UC3, Scalar(0,0,0));
 	namedWindow( "image", CV_WINDOW_AUTOSIZE );
 	imshow( "image", segments );
