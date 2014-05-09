@@ -55,7 +55,7 @@ def filter_4d_matrix(matrix, maskfile):
     #sum_matrix = np.sum(matrix,0)
     #bool_matrix = np.isnan(sum_matrix)
     #matrix[bool_matrix,:] = 0
-    matrix = matrix.T
+    #matrix = matrix.T
 
     return matrix
 
@@ -133,3 +133,24 @@ def information_map(input_4d, method='mi'):
 def correlation_map(filelist, labels):
     """calculate a correlation map with the labels"""
     pass
+
+
+def smooth_4d_matrix(matrix,kernel_width):
+    """apply smoothing kernel on a 4d array of data
+    for each subject separately.
+    Subject dimension should be the last dimension"""
+
+    import scipy.ndimage as spim
+    import numpy as np
+    matrix = matrix.T
+    matrix[np.isnan(matrix)] = 0
+    for ind, subj in enumerate(matrix):
+        subj_sm = spim.gaussian_filter(subj,kernel_width)
+        matrix[ind] = subj_sm
+
+    matrix = matrix.T
+    return matrix
+
+
+
+

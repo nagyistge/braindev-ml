@@ -19,6 +19,7 @@ from sklearn.grid_search import GridSearchCV
 import sklearn.decomposition as skldec
 import os
 
+import scipy.signal as ssig
 
 #-------------Functions
 def prepare_modality(filelist, mask):
@@ -36,7 +37,7 @@ def wardCV(data, labels, cut_level, connect):
     for i in cut_level:
         #reduce to set amount of clusters
         agglo = sklcl.WardAgglomeration(connectivity=connect, n_clusters=i)
-        cross = sklcv.KFold(n=len(labels), n_folds=10)
+        cross = sklcv.KFold(n=len(labels), n_folds=len(labels))
         pred_vec = np.zeros_like(labels)
         for train_i, test_i in cross:
             use_train = agglo.fit_transform(data[train_i])
@@ -51,9 +52,10 @@ def wardCV(data, labels, cut_level, connect):
             pr = model.predict(use_test)
             pred_vec[test_i] = pr
         #save accuracy
-        accuracies[cut_level==i], _ = ss.pearsonr(pred_vec,labels)
+        accuracies[cut_level==i], _ = ss.spearmanr(pred_vec,labels)
     #based on loo-accuracy, select the optimal number of features
     #TODO -smooth this?
+    accuracies = ssig.medfilt(accuracies)
     best_model = cut_level[accuracies.argmax()]
     return best_model
 
@@ -71,7 +73,7 @@ def univCV(data,labels,cut_level):
     #loop for the list
     correlations = np.zeros(len(cut_level))
     for inx, i in enumerate(cut_level):
-        cross = sklcv.KFold(n=len(labels), n_folds=10)
+        cross = sklcv.KFold(n=len(labels), n_folds=len(labels))
         prediction = np.zeros_like(labels)
         for train, test in cross:
             univ = sklfs.SelectFpr(sklfs.f_regression,
@@ -101,9 +103,11 @@ def univCV(data,labels,cut_level):
             pred = mod.predict(prep_test)
             prediction[test] = pred
         #calculate prediction
-        correlations[inx], _ = ss.pearsonr(prediction,labels)
+        correlations[inx], _ = ss.spearmanr(prediction,labels)
     #TODO - smooth this?
+    correlations = ssig.medfilt(correlations)
     best_cut = cut_level[correlations.argmax()]
+
 
     return best_cut
 
@@ -150,7 +154,7 @@ def do_model(train_d, train_l, test_d, connect, use_modules):
 
     #train model
 
-    nus = np.array([1,0.8,0.5,0.1])#set nu threshold
+    nus = np.array([1])#set nu threshold
     params = dict (nu=nus)
     model = GridSearchCV(estimator = sklsvm.NuSVR(kernel='linear',C=100, degree=1) #changed from 1000 to 10 for dbm
             , param_grid=params, cv=10, n_jobs= 1, scoring='r2')#TODO changed from mse
@@ -205,10 +209,14 @@ def run_pipe(input_files, input_labels, use_modules, no_proc):
     if use_modules.find('b') != -1:
         bool_pos, bool_neg = direction_cutoff(feature_matrix)
         feature_matrix = feature_matrix[:, bool_pos]
+    else:
+        bool_pos = 0
 
     if use_modules.find('c') != -1:
         final_scaler = sklpre.StandardScaler()
         feature_matrix = final_scaler.fit_transform(feature_matrix)
+    else:
+        final_scaler = 0
 
 
     if use_modules.find('d') != -1:
@@ -221,4 +229,4 @@ def run_pipe(input_files, input_labels, use_modules, no_proc):
             nu=np.median(cv_pred[:,3]))
     final_model.fit(feature_matrix, input_labels)
 
-    return cv_pred, corr, p, final_agglo, final_univ, final_model
+    return cv_pred, corr, p, final_agglo, final_univ, final_scaler, bool_pos, final_model
