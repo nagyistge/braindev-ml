@@ -60,6 +60,21 @@ def filter_4d_matrix(matrix, maskfile):
     return matrix
 
 
+def mask_image(nii, maskfile,outname):
+    """mask bimage with binary file"""
+    import nibabel as nb
+    import numpy as np
+    matrix = nb.load(nii).get_data()
+    mask_handle = nb.load(maskfile)
+    maskdata = mask_handle.get_data()
+
+    matrix[maskdata==0] = np.nan
+    out_img=nb.Nifti1Image(matrix, mask_handle.get_affine())
+    nb.save(out_img,outname)
+    return
+
+
+
 def information_map(input_4d, method='mi'):
     """calculate similarity of signal for each voxel compared to surrounding voxels
     input: input_4d - four-dimentional array with group or timeseries
@@ -152,5 +167,63 @@ def smooth_4d_matrix(matrix,kernel_width):
     return matrix
 
 
+def regression_map(filelist, vector):
+    import statsmodels.api as sm
+    import numpy as np
+    #import images
+    matrix = make_4d_matrix(filelist)
+
+    #create output array
+    output_array = np.zeros_like(matrix[:,:,:,0])
+
+    #reshape
+    matrix = matrix.reshape((-1,len(filelist)))
+    output_stats = output_array.ravel()
+    #loop over voxels
+    for ind, voxel in enumerate(matrix):
+        X=sm.add_constant(vector)
+        voxel_ols=sm.OLS(voxel,X)
+        voxel_results=voxel_ols.fit()
+        out_param=voxel_results.tvalues[1]
+        output_stats[ind]=out_param
+
+    output_array=output_stats.reshape(output_array.shape)
+    return output_array
+
+def average_movement(affine_list):
+    """calculate a movement index based on a series of affine transformation"""
+    import nipy.algorithms.registration as nar
+    import numpy as np
+    translation = np.zeros(len(affine_list))
+    rotation = np.zeros(len(affine_list))
+
+    for inx, i in enumerate(affine_list):
+        affine_matrix = np.genfromtxt(i)
+        affine_object = nar.Affine(affine_matrix)
+        translation_par = np.abs(affine_object.translation)
+        rotation_par = np.abs(affine_object.rotation)
+        translation_par = np.mean(translation_par)
+        rotation_par = np.mean(rotation_par)
+        translation[inx] = translation_par
+        rotation[inx] = rotation_par
+    translation_mean = np.mean(translation_par)
+    rotation_mean = np.mean(rotation_par)
+    return rotation_mean, translation_mean
+
+def combine_movement_vectors(rot,trans):
+    import numpy as np
+
+    def standardize(vector):
+        vector = vector-np.median(vector)
+        quartile_range = np.percentile(vector,75)-np.percentile(vector,25)
+        vector = vector/(quartile_range)
+        return vector
+
+    rot_stand = standardize(rot)
+    trans_stand = standardize(trans)
+
+    move_index = (rot_stand+trans_stand)/2
+
+    return move_index
 
 
